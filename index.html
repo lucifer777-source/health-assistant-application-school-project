@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>健康アシスタント</title>
+<style>
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: url('img.jpg') no-repeat center center/cover;
+        position: relative;
+    }
+ 
+    
+    .overlay {
+        background-color: rgba(0, 0, 0, 0.4);
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        z-index: 1;
+    }
+ 
+    
+    .container {
+        max-width: 750px;
+        width: 90%;
+        background: rgba(255, 255, 255, 0.85);
+        padding: 30px;
+        border-radius: 20px;
+        box-shadow: 0px 8px 30px rgba(0,0,0,0.3);
+        z-index: 2;
+        backdrop-filter: blur(8px);
+    }
+ 
+    h1 {
+        text-align: center;
+        color: #2b2b2b;
+        margin-bottom: 25px;
+        font-size: 28px;
+    }
+ 
+    section {
+        background: #f9f9f9;
+        padding: 18px;
+        margin-bottom: 22px;
+        border-radius: 12px;
+        border-left: 6px solid #66a6ff;
+        box-shadow: inset 0px 2px 5px rgba(0,0,0,0.05);
+    }
+ 
+    h2 {
+        margin-top: 0;
+        color: #333;
+        font-size: 20px;
+    }
+ 
+    input, button {
+        margin: 10px 0;
+        padding: 12px;
+        width: 100%;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        font-size: 15px;
+    }
+ 
+    button {
+        background: linear-gradient(135deg, #66a6ff, #4d8ae5);
+        color: #fff;
+        font-weight: bold;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+ 
+    button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0px 4px 15px rgba(0,0,0,0.2);
+    }
+ 
+    p, ul {
+        color: #333;
+        font-size: 14px;
+    }
+ 
+    ul {
+        list-style: none;
+        padding-left: 0;
+    }
+ 
+    li {
+        background: #eef5ff;
+        margin: 6px 0;
+        padding: 10px;
+        border-radius: 6px;
+    }
+</style>
+</head>
+<body>
+<div class="overlay"></div>
+<div class="container">
+<h1>🌿 健康アシスタント</h1>
+ 
+<section id="water">
+<h2>💧 水分リマインダー</h2>
+<input type="number" id="waterAmount" placeholder="水の量 (ml)">
+<button onclick="addWater()">水を飲む</button>
+<p id="waterStatus">今日は 0 ml 飲みました</p>
+</section>
+ 
+<section id="bp">
+<h2>🩺 血圧記録</h2>
+<input type="number" id="systolic" placeholder="最高血圧 (収縮期)">
+<input type="number" id="diastolic" placeholder="最低血圧 (拡張期)">
+<button onclick="addBP()">血圧を追加</button>
+<ul id="bpHistory"></ul>
+</section>
+ 
+<section id="medicine">
+<h2>💊 薬のリマインダー</h2>
+<input type="text" id="medicineName" placeholder="薬の名前">
+<input type="time" id="medicineTime">
+<button onclick="addMedicine()">薬を登録</button>
+<ul id="medicineList"></ul>
+</section>
+ 
+<section id="sleep">
+<h2>😴 就寝リマインダー</h2>
+<input type="time" id="sleepTime">
+<button onclick="setSleepReminder()">リマインダーを設定</button>
+<p id="sleepStatus"></p>
+</section>
+</div>
+<script>
+    
+    function saveData(key, value) {
+        localStorage.setItem(key, JSON.stringify(value));
+    }
+    function loadData(key, defaultValue) {
+        const data = localStorage.getItem(key);
+        return data ? JSON.parse(data) : defaultValue;
+    }
+ 
+    
+    let totalWater = loadData("totalWater", 0);
+    document.getElementById('waterStatus').innerText = `今日は ${totalWater} ml 飲みました`;
+ 
+    function addWater() {
+        const amount = parseInt(document.getElementById('waterAmount').value) || 0;
+        totalWater += amount;
+        document.getElementById('waterStatus').innerText = `今日は ${totalWater} ml 飲みました`;
+        saveData("totalWater", totalWater);
+        alert(`よくできました！${amount} ml 飲みました 💧`);
+    }
+ 
+    
+    let bpHistory = loadData("bpHistory", []);
+    function addBP() {
+        const sys = parseInt(document.getElementById('systolic').value);
+        const dia = parseInt(document.getElementById('diastolic').value);
+        if(sys && dia){
+            const entry = `${sys}/${dia} mmHg - ${new Date().toLocaleString()}`;
+            bpHistory.push(entry);
+            saveData("bpHistory", bpHistory);
+            updateBPHistory();
+        } else {
+            alert("正しい血圧の値を入力してください");
+        }
+    }
+    function updateBPHistory() {
+        const ul = document.getElementById('bpHistory');
+        ul.innerHTML = "";
+        bpHistory.forEach(item => {
+            const li = document.createElement('li');
+            li.textContent = item;
+            ul.appendChild(li);
+        });
+    }
+    updateBPHistory();
+ 
+    
+    let medicines = loadData("medicines", []);
+    function addMedicine() {
+        const name = document.getElementById('medicineName').value;
+        const time = document.getElementById('medicineTime').value;
+        if(name && time){
+            medicines.push({name, time});
+            saveData("medicines", medicines);
+            updateMedicineList();
+            alert(`${name} の服用リマインダーを ${time} に設定しました`);
+        } else {
+            alert("薬の名前と時間を入力してください");
+        }
+    }
+    function updateMedicineList() {
+        const ul = document.getElementById('medicineList');
+        ul.innerHTML = "";
+        medicines.forEach(med => {
+            const li = document.createElement('li');
+            li.textContent = `${med.name} を ${med.time} に服用`;
+            ul.appendChild(li);
+        });
+    }
+    updateMedicineList();
+ 
+    
+    let sleepTime = loadData("sleepTime", "");
+    if(sleepTime) {
+        document.getElementById('sleepStatus').innerText = `就寝リマインダー: ${sleepTime}`;
+    }
+ 
+    let sleepInterval;
+    function setSleepReminder() {
+        sleepTime = document.getElementById('sleepTime').value;
+        if(!sleepTime) return alert("時間を設定してください");
+        document.getElementById('sleepStatus').innerText = `就寝リマインダー: ${sleepTime}`;
+        saveData("sleepTime", sleepTime);
+ 
+        if(sleepInterval) clearInterval(sleepInterval);
+        sleepInterval = setInterval(() => {
+            const now = new Date();
+            const [hours, minutes] = sleepTime.split(":").map(Number);
+            if(now.getHours() === hours && now.getMinutes() === minutes){
+                alert("そろそろ寝る時間ですよ 💤");
+            }
+        }, 60000);
+    }
+</script>
+</body>
+</html>
+ 
